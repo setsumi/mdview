@@ -1,5 +1,5 @@
 # mdview
-Simple Markdown Viewer
+Simple Markdown Viewer for Windows
 
 **[Download Here](https://github.com/setsumi/mdview/releases/)**
 
