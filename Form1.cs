@@ -59,7 +59,7 @@ namespace mdview
 
         private void Open(string filename)
         {
-            this.Text = Application.ProductName + " - " + filename;
+            this.Text = filename + " - " + Application.ProductName;
             label1.Text = "Loading...";
             this.Refresh();
             Do(filename);
