@@ -1,0 +1,7 @@
+:not(pre) > code {
+    background-color: rgba(175,184,193,0.2);
+}
+
+pre:has(code) {
+    background-color: #f6f8fa;
+}

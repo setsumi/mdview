@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using HtmlAgilityPack;
 using Markdig;
 using Microsoft.Web.WebView2.Core;
 
@@ -68,16 +69,33 @@ namespace mdview
 
         async private void Do(string filename)
         {
+            // set current directory
+            string exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            Directory.SetCurrentDirectory(exeDir);
+
             string mdtext = File.ReadAllText(filename);
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             string result = Markdown.ToHtml(mdtext, pipeline);
+
+            // add css
+            const string outfile = "output.html";
+            var doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(result);
+            var linkNode = HtmlNode.CreateNode(@"<link rel='stylesheet' href='style.css'>");
+            doc.DocumentNode.AppendChild(linkNode);
+            doc.Save(outfile);
+
+            // display
             if (!_initOnce)
             {
                 _initOnce = true;
                 var env = await CoreWebView2Environment.CreateAsync(null, null, new CoreWebView2EnvironmentOptions("--disk-cache-dir=nul"));
                 await webView21.EnsureCoreWebView2Async(env);
             }
-            webView21.NavigateToString(result);
+            string uri = "file:///" + exeDir + Path.DirectorySeparatorChar + outfile;
+            uri = uri.Replace(Path.DirectorySeparatorChar, '/');
+            webView21.Source = new Uri(uri);
+            //webView21.NavigateToString(result);
         }
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -114,6 +132,11 @@ namespace mdview
             if (e.KeyCode == Keys.Escape)
             {
                 this.Close();
+            }
+            else if (e.Control && e.KeyCode == Keys.O)
+            {
+                e.Handled = true;
+                label1_MouseClick(null, null);
             }
         }
 
