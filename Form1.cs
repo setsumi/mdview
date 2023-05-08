@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using HtmlAgilityPack;
 using Markdig;
 using Microsoft.Web.WebView2.Core;
 
@@ -31,6 +30,8 @@ namespace mdview
         // ID for the Open item on the system menu
         private int SYSMENU_OPEN_ID = 0x1;
 
+
+        string _exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
         bool _initOnce = false;
         bool _initForm = true;
         public FormMain(string[] args)
@@ -69,33 +70,17 @@ namespace mdview
 
         async private void Do(string filename)
         {
-            // set current directory
-            string exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            Directory.SetCurrentDirectory(exeDir);
-
             string mdtext = File.ReadAllText(filename);
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             string result = Markdown.ToHtml(mdtext, pipeline);
-
-            // add css
-            const string outfile = "output.html";
-            var doc = new HtmlAgilityPack.HtmlDocument();
-            doc.LoadHtml(result);
-            var linkNode = HtmlNode.CreateNode(@"<link rel='stylesheet' href='style.css'>");
-            doc.DocumentNode.AppendChild(linkNode);
-            doc.Save(outfile);
-
-            // display
+            result += "<style>" + File.ReadAllText(_exeDir + Path.DirectorySeparatorChar + "style.css") + "</style>";
             if (!_initOnce)
             {
                 _initOnce = true;
                 var env = await CoreWebView2Environment.CreateAsync(null, null, new CoreWebView2EnvironmentOptions("--disk-cache-dir=nul"));
                 await webView21.EnsureCoreWebView2Async(env);
             }
-            string uri = "file:///" + exeDir + Path.DirectorySeparatorChar + outfile;
-            uri = uri.Replace(Path.DirectorySeparatorChar, '/');
-            webView21.Source = new Uri(uri);
-            //webView21.NavigateToString(result);
+            webView21.NavigateToString(result);
         }
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
