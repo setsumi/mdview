@@ -8,5 +8,5 @@ Simple Markdown Viewer for Windows.
 
 
 ### Screenshot
-![image](https://user-images.githubusercontent.com/5970554/211241698-30ca2d03-f24b-4c45-b44e-0cf96c7bce08.png)
+![image](https://user-images.githubusercontent.com/5970554/236730150-8c5da27f-578e-4d40-bfb2-8098836c53fc.png)
 
