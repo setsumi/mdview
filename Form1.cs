@@ -53,7 +53,7 @@ namespace mdview
             }
             else
             {
-                label1.Text = "Open Markdown File...";
+                label1.Text = "Open Markdown file (Ctrl+O)...";
                 webView21.Visible = false;
             }
             _initForm = false;
@@ -66,6 +66,7 @@ namespace mdview
             this.Refresh();
             Do(filename);
             webView21.Visible = true;
+            webView21.Focus();
         }
 
         async private void Do(string filename)
@@ -118,7 +119,7 @@ namespace mdview
             {
                 this.Close();
             }
-            else if (e.Control && e.KeyCode == Keys.O)
+            else if (e.KeyCode == Keys.O) // don't check if Ctrl is pressed since webview don't pass single letter key anyway
             {
                 e.Handled = true;
                 label1_MouseClick(null, null);
@@ -158,7 +159,7 @@ namespace mdview
 
             IntPtr hSysMenu = GetSystemMenu(this.Handle, false);
             AppendMenu(hSysMenu, MF_SEPARATOR, 0, string.Empty);
-            AppendMenu(hSysMenu, MF_STRING, SYSMENU_OPEN_ID, "&Open Markdown File...");
+            AppendMenu(hSysMenu, MF_STRING, SYSMENU_OPEN_ID, "&Open Markdown file (Ctrl+O)...");
         }
 
         protected override void WndProc(ref Message m)
