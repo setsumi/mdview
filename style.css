@@ -19,3 +19,8 @@ h1, h2 {
     border-bottom: 1px solid lightgray;
     padding-bottom: 5px;
 }
+
+img {
+    max-height: 100%;
+    max-width: 100%;
+}
