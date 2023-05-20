@@ -25,3 +25,23 @@ img {
     max-height: 100%;
     max-width: 100%;
 }
+
+table {
+    border-collapse: collapse;
+    width: auto;
+}
+
+    table td, table th {
+        border: 1px solid #D0D7DE;
+        padding: 8px;
+    }
+
+    table tr:nth-child(even) {
+        background-color: #F6F8FA;
+    }
+
+    table th {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        text-align: left;
+    }
