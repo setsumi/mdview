@@ -22,7 +22,7 @@ h1, h2 {
 }
 
 img {
-    max-height: 100%;
+    max-height: fit-content;
     max-width: 100%;
 }
 
