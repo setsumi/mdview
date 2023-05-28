@@ -35,10 +35,11 @@ namespace mdview
         // ID for the Open item on the system menu
         private int SYSMENU_OPEN_ID = 0x1;
 
+        private string _exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        private bool _initOnce = false;
+        private bool _initForm = true;
+        private FormWindowState _lastWindowState = FormWindowState.Normal;
 
-        string _exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        bool _initOnce = false;
-        bool _initForm = true;
         public FormMain(string[] args)
         {
             InitializeComponent();
@@ -51,6 +52,7 @@ namespace mdview
                 this.Height = Properties.Settings.Default.winHeight;
             if (Properties.Settings.Default.winMaximized)
                 this.WindowState = FormWindowState.Maximized;
+            _lastWindowState = this.WindowState;
 
             Rectangle workingArea = Screen.FromControl(this).WorkingArea;
             RECT rect;
@@ -104,7 +106,6 @@ namespace mdview
             Properties.Settings.Default.Save();
         }
 
-        FormWindowState _lastWindowState = FormWindowState.Normal;
         private void FormMain_Resize(object sender, EventArgs e)
         {
             if (_initForm) return;
