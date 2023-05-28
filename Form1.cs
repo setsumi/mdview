@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Markdig;
 using Microsoft.Web.WebView2.Core;
@@ -27,6 +21,17 @@ namespace mdview
         private static extern bool AppendMenu(IntPtr hMenu, int uFlags, int uIDNewItem, string lpNewItem);
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool InsertMenu(IntPtr hMenu, int uPosition, int uFlags, int uIDNewItem, string lpNewItem);
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
         // ID for the Open item on the system menu
         private int SYSMENU_OPEN_ID = 0x1;
 
@@ -46,6 +51,16 @@ namespace mdview
                 this.Height = Properties.Settings.Default.winHeight;
             if (Properties.Settings.Default.winMaximized)
                 this.WindowState = FormWindowState.Maximized;
+
+            Rectangle workingArea = Screen.FromControl(this).WorkingArea;
+            RECT rect;
+            GetWindowRect(this.Handle, out rect);
+            int bottomOffset = workingArea.Bottom - 1 - rect.Bottom;
+            if (bottomOffset < 0)
+            {
+                this.Top += bottomOffset;
+                if (this.Top < workingArea.Top) this.Top = workingArea.Top;
+            }
 
             if (args.Length > 0)
             {
