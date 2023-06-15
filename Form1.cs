@@ -64,6 +64,13 @@ namespace mdview
                 if (this.Top < workingArea.Top) this.Top = workingArea.Top;
             }
 
+            if (!IsWebView2Installed())
+            {
+                MessageBox.Show("Microsoft Edge WebView2 is not installed.\n\nhttps://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section\n\n(Ctrl+C) - copy text",
+                    this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Close();
+            }
+
             if (args.Length > 0)
             {
                 Open(args[0]);
@@ -74,6 +81,19 @@ namespace mdview
                 webView21.Visible = false;
             }
             _initForm = false;
+        }
+
+        public static bool IsWebView2Installed()
+        {
+            try
+            {
+                var version = CoreWebView2Environment.GetAvailableBrowserVersionString();
+                return version != null;
+            }
+            catch (WebView2RuntimeNotFoundException)
+            {
+                return false;
+            }
         }
 
         private void Open(string filename)
