@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -71,16 +72,21 @@ namespace mdview
                 Close();
             }
 
-            if (args.Length > 0)
+            _initForm = false;
+        }
+
+        private void FormMain_Shown(object sender, EventArgs e)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            if (args.Length > 1)
             {
-                Open(args[0]);
+                Open(args[1]);
             }
             else
             {
-                label1.Text = "Open Markdown file (Ctrl+O)...";
+                label1.Text = "Open file (Ctrl+O)...";
                 webView21.Visible = false;
             }
-            _initForm = false;
         }
 
         public static bool IsWebView2Installed()
@@ -108,10 +114,30 @@ namespace mdview
 
         async private void Do(string filename)
         {
-            string mdtext = File.ReadAllText(filename);
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            string result = Markdown.ToHtml(mdtext, pipeline);
-            result += "<style>" + File.ReadAllText(_exeDir + Path.DirectorySeparatorChar + "style.css") + "</style>";
+            string result;
+
+            // man format
+            if (IsManExtension(Path.GetExtension(filename)))
+            {
+                string result_file = Path.Combine(_exeDir, "result.html");
+                string groff_file = Path.Combine(_exeDir, "groff", "bin", "groff.exe");
+                if (!File.Exists(groff_file)) throw new FileNotFoundException($"File not found{Environment.NewLine}{groff_file}");
+                if (File.Exists(result_file)) File.Delete(result_file);
+                ProcessStartInfo si = new ProcessStartInfo("cmd.exe");
+                si.Arguments = $"/C \"{groff_file} -mandoc -Thtml {filename} > {result_file}\"";
+                si.WindowStyle = ProcessWindowStyle.Hidden;
+                using (var p = Process.Start(si)) p.WaitForExit();
+                if (!File.Exists(result_file)) throw new FileNotFoundException($"File not found{Environment.NewLine}{result_file}");
+                result = File.ReadAllText(result_file);
+            }
+            else // markdown format
+            {
+                string mdtext = File.ReadAllText(filename);
+                var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+                result = Markdown.ToHtml(mdtext, pipeline);
+                result += "<style>" + File.ReadAllText(Path.Combine(_exeDir, "style.css")) + "</style>";
+            }
+
             if (!_initOnce)
             {
                 _initOnce = true;
@@ -119,6 +145,26 @@ namespace mdview
                 await webView21.EnsureCoreWebView2Async(env);
             }
             webView21.NavigateToString(result);
+        }
+
+        private bool IsManExtension(string ext)
+        {
+            bool rv = false;
+            if (string.IsNullOrEmpty(ext)) return false;
+
+            for (int i = 1; i <= 8; i++)
+            {
+                if (ext == $".{i}")
+                {
+                    rv = true;
+                    break;
+                }
+            }
+            if (!rv)
+            {
+                rv = string.Compare(ext, ".mdoc", true) == 0 || string.Compare(ext, ".man", true) == 0;
+            }
+            return rv;
         }
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -195,7 +241,7 @@ namespace mdview
 
             IntPtr hSysMenu = GetSystemMenu(this.Handle, false);
             AppendMenu(hSysMenu, MF_SEPARATOR, 0, string.Empty);
-            AppendMenu(hSysMenu, MF_STRING, SYSMENU_OPEN_ID, "&Open Markdown file (Ctrl+O)...");
+            AppendMenu(hSysMenu, MF_STRING, SYSMENU_OPEN_ID, "&Open file (Ctrl+O)...");
         }
 
         protected override void WndProc(ref Message m)
