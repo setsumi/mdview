@@ -40,6 +40,7 @@ namespace mdview
         private bool _initOnce = false;
         private bool _initForm = true;
         private FormWindowState _lastWindowState = FormWindowState.Normal;
+        private Plexiglass _plexiGlass;
 
         public FormMain(string[] args)
         {
@@ -71,6 +72,8 @@ namespace mdview
                     this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 Close();
             }
+
+            _plexiGlass = new Plexiglass(this);
 
             _initForm = false;
         }
@@ -104,11 +107,14 @@ namespace mdview
 
         private void Open(string filename)
         {
-            this.Text = filename + " - " + Application.ProductName;
             label1.Text = "Loading...";
+            this.Text = "LOADING...";
+            if (webView21.Visible) _plexiGlass.Show();
             this.Refresh();
             Do(filename);
+            this.Text = filename + "   - " + Application.ProductName;
             webView21.Visible = true;
+            _plexiGlass.Hide();
             webView21.Focus();
         }
 
@@ -254,4 +260,50 @@ namespace mdview
             }
         }
     }
+
+    public class Plexiglass : Form
+    {
+        private Form _tocover;
+        public Plexiglass(Form tocover)
+        {
+            this.BackColor = Color.DarkGray;
+            this.Opacity = 0.15;      // Tweak as desired
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.ControlBox = false;
+            this.ShowInTaskbar = false;
+            this.StartPosition = FormStartPosition.Manual;
+            this.AutoScaleMode = AutoScaleMode.None;
+            this.Location = tocover.PointToScreen(Point.Empty);
+            this.ClientSize = tocover.ClientSize;
+            tocover.LocationChanged += Cover_LocationChanged;
+            tocover.ClientSizeChanged += Cover_ClientSizeChanged;
+
+            this.Owner = tocover;
+            this.Visible = false;
+            _tocover = tocover;
+        }
+        public new void Show()
+        {
+            base.Show(_tocover);
+            _tocover.Focus();
+        }
+        private void Cover_LocationChanged(object sender, EventArgs e)
+        {
+            // Ensure the plexiglass follows the owner
+            this.Location = this.Owner.PointToScreen(Point.Empty);
+        }
+        private void Cover_ClientSizeChanged(object sender, EventArgs e)
+        {
+            // Ensure the plexiglass keeps the owner covered
+            this.ClientSize = this.Owner.ClientSize;
+        }
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Restore owner
+            this.Owner.LocationChanged -= Cover_LocationChanged;
+            this.Owner.ClientSizeChanged -= Cover_ClientSizeChanged;
+            base.OnFormClosing(e);
+        }
+    }
+
 }
