@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
 using Markdig;
 using Microsoft.Web.WebView2.Core;
@@ -36,17 +37,23 @@ namespace mdview
         // ID for the Open item on the system menu
         private int SYSMENU_OPEN_ID = 0x1;
 
-        private string _exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        private readonly string _exeDir;
+        private readonly string _resultFile;
+        private readonly string _userdataFolder;
         private bool _initOnce = false;
         private bool _initForm = true;
         private FormWindowState _lastWindowState = FormWindowState.Normal;
-        private Plexiglass _plexiGlass;
+        private readonly Plexiglass _plexiGlass;
 
         public FormMain(string[] args)
         {
             InitializeComponent();
 
             this.AllowDrop = true;
+            _exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            _resultFile = Path.Combine(_exeDir, "result.html");
+            _userdataFolder = Path.Combine(_exeDir, $"{Application.ProductName}_WebView2Cache");
+            _plexiGlass = new Plexiglass(this);
 
             if (Properties.Settings.Default.winWidth > 0)
                 this.Width = Properties.Settings.Default.winWidth;
@@ -72,8 +79,6 @@ namespace mdview
                     this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 Close();
             }
-
-            _plexiGlass = new Plexiglass(this);
 
             _initForm = false;
         }
@@ -120,37 +125,44 @@ namespace mdview
 
         async private void Do(string filename)
         {
-            string result;
+            if (File.Exists(_resultFile)) File.Delete(_resultFile);
 
             // man format
             if (IsManExtension(Path.GetExtension(filename)))
             {
-                string result_file = Path.Combine(_exeDir, "result.html");
                 string groff_file = Path.Combine(_exeDir, "groff", "bin", "groff.exe");
                 if (!File.Exists(groff_file)) throw new FileNotFoundException($"File not found{Environment.NewLine}{groff_file}");
-                if (File.Exists(result_file)) File.Delete(result_file);
                 ProcessStartInfo si = new ProcessStartInfo("cmd.exe");
-                si.Arguments = $"/C \"{groff_file} -mandoc -Thtml {filename} > {result_file}\"";
+                si.Arguments = $"/C \"{groff_file} -mandoc -Thtml {filename} > {_resultFile}\"";
                 si.WindowStyle = ProcessWindowStyle.Hidden;
                 using (var p = Process.Start(si)) p.WaitForExit();
-                if (!File.Exists(result_file)) throw new FileNotFoundException($"File not found{Environment.NewLine}{result_file}");
-                result = File.ReadAllText(result_file);
             }
             else // markdown format
             {
+                string result = @"<!DOCTYPE html><html><head><meta charset=""utf-8""><meta name=""viewport"" content=""width=device-width, initial-scale=1""></head><body>";
                 string mdtext = File.ReadAllText(filename);
                 var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-                result = Markdown.ToHtml(mdtext, pipeline);
+                result += Markdown.ToHtml(mdtext, pipeline);
                 result += "<style>" + File.ReadAllText(Path.Combine(_exeDir, "style.css")) + "</style>";
+                result += @"</body></html>";
+                File.WriteAllText(_resultFile, result, Encoding.UTF8);
             }
 
             if (!_initOnce)
             {
                 _initOnce = true;
-                var env = await CoreWebView2Environment.CreateAsync(null, null, new CoreWebView2EnvironmentOptions("--disk-cache-dir=nul"));
+                var env = await CoreWebView2Environment.CreateAsync(null, _userdataFolder, new CoreWebView2EnvironmentOptions("--disk-cache-dir=nul"));
                 await webView21.EnsureCoreWebView2Async(env);
             }
-            webView21.NavigateToString(result);
+            if (!File.Exists(_resultFile)) throw new FileNotFoundException($"File not found{Environment.NewLine}{_resultFile}");
+            string uri = webView21.Source.AbsoluteUri;
+            webView21.Source = new Uri(FormatFileURL(_resultFile));
+            if (uri == webView21.Source.AbsoluteUri) webView21.Reload();
+        }
+
+        private string FormatFileURL(string filepath)
+        {
+            return @"file:///" + filepath.Replace(Path.DirectorySeparatorChar, '/');
         }
 
         private bool IsManExtension(string ext)
@@ -176,6 +188,7 @@ namespace mdview
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             Properties.Settings.Default.Save();
+            _plexiGlass.Close();
         }
 
         private void FormMain_Resize(object sender, EventArgs e)
