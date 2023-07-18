@@ -38,12 +38,13 @@ namespace mdview
         private int SYSMENU_OPEN_ID = 0x1;
 
         private readonly string _exeDir;
-        private readonly string _resultFile;
         private readonly string _userdataFolder;
+        private string _resultFile;
         private bool _initOnce = false;
         private bool _initForm = true;
         private FormWindowState _lastWindowState = FormWindowState.Normal;
         private readonly Plexiglass _plexiGlass;
+        private readonly Random _random = new Random((int)DateTime.Now.Ticks & 0x0000FFFF);
 
         public FormMain(string[] args)
         {
@@ -51,7 +52,6 @@ namespace mdview
 
             this.AllowDrop = true;
             _exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            _resultFile = Path.Combine(_exeDir, "result.html");
             _userdataFolder = Path.Combine(_exeDir, $"{Application.ProductName}_WebView2Cache");
             _plexiGlass = new Plexiglass(this);
 
@@ -126,6 +126,7 @@ namespace mdview
         async private void Do(string filename)
         {
             if (File.Exists(_resultFile)) File.Delete(_resultFile);
+            _resultFile = Path.Combine(_exeDir, $"result{GenerateRandomString(15)}.html");
 
             // man format
             if (IsManExtension(Path.GetExtension(filename)))
@@ -155,9 +156,19 @@ namespace mdview
                 await webView21.EnsureCoreWebView2Async(env);
             }
             if (!File.Exists(_resultFile)) throw new FileNotFoundException($"File not found{Environment.NewLine}{_resultFile}");
-            string uri = webView21.Source.AbsoluteUri;
             webView21.Source = new Uri(FormatFileURL(_resultFile));
-            if (uri == webView21.Source.AbsoluteUri) webView21.Reload();
+        }
+
+        private string GenerateRandomString(int length)
+        {
+            const string pool = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var builder = new StringBuilder();
+            for (var i = 0; i < length; i++)
+            {
+                var c = pool[_random.Next(0, pool.Length)];
+                builder.Append(c);
+            }
+            return builder.ToString();
         }
 
         private string FormatFileURL(string filepath)
@@ -189,6 +200,7 @@ namespace mdview
         {
             Properties.Settings.Default.Save();
             _plexiGlass.Close();
+            if (File.Exists(_resultFile)) File.Delete(_resultFile);
         }
 
         private void FormMain_Resize(object sender, EventArgs e)
