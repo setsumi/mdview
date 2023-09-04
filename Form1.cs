@@ -249,7 +249,7 @@ namespace mdview
             var ofd = new OpenFileDialog();
             ofd.Multiselect = false;
             ofd.CheckFileExists = true;
-            ofd.Filter = "All Files (*.*)|*.*|Markdown Files (*.md)|*.md|Unix Man Files (*.1, *.2, *.3, *.4, *.5, *.6, *.7, *.8, *.man, *.mdoc)|*.1;*.2;*.3;*.4;*.5;*.6;*.7;*.8;*.man;*.mdoc";
+            ofd.Filter = "All Files (*.*)|*.*|Markdown Files (*.md, *.markdown)|*.md;*.markdown|Unix Man Files (*.1, *.2, *.3, *.4, *.5, *.6, *.7, *.8, *.man, *.mdoc)|*.1;*.2;*.3;*.4;*.5;*.6;*.7;*.8;*.man;*.mdoc";
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 Open(ofd.FileName);
