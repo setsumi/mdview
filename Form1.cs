@@ -46,6 +46,21 @@ namespace mdview
         private readonly Plexiglass _plexiGlass;
         private readonly Random _random = new Random((int)DateTime.Now.Ticks & 0x0000FFFF);
 
+        public static bool IsFolderWritable(string folder)
+        {
+            try
+            {
+                string testFile = Path.Combine(folder, "__test_write_permission_" + Guid.NewGuid() + ".tmp");
+                File.WriteAllText(testFile, "test write");
+                File.Delete(testFile);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public FormMain(string[] args)
         {
             InitializeComponent();
@@ -126,7 +141,12 @@ namespace mdview
         async private void Do(string filename)
         {
             if (File.Exists(_resultFile)) File.Delete(_resultFile);
-            _resultFile = Path.Combine(Path.GetDirectoryName(filename), $"mdview_result{GenerateRandomString(15)}.html");
+            string resultFolder = Path.GetDirectoryName(filename);
+            if (!IsFolderWritable(resultFolder))
+            {
+                resultFolder = _exeDir;
+            }
+            _resultFile = Path.Combine(resultFolder, $"mdview_result{GenerateRandomString(15)}.html");
 
             // man format
             if (IsManExtension(Path.GetExtension(filename)))
