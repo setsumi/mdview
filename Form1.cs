@@ -126,7 +126,7 @@ namespace mdview
         async private void Do(string filename)
         {
             if (File.Exists(_resultFile)) File.Delete(_resultFile);
-            _resultFile = Path.Combine(_exeDir, $"result{GenerateRandomString(15)}.html");
+            _resultFile = Path.Combine(Path.GetDirectoryName(filename), $"mdview_result{GenerateRandomString(15)}.html");
 
             // man format
             if (IsManExtension(Path.GetExtension(filename)))
