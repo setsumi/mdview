@@ -4,6 +4,7 @@ Simple markdown and unix man file Viewer for Windows.
 **[Download Here](https://github.com/setsumi/mdview/releases/)**
 
 ### Requirements
+- .NET Framework 4.6.2
 - [Edge WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section)
 
 
