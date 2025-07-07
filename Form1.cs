@@ -35,7 +35,8 @@ namespace mdview
         }
 
         // ID for the Open item on the system menu
-        private int SYSMENU_OPEN_ID = 0x1;
+        private const int SYSMENU_OPEN_ID = 0x1;
+        private const int SYSMENU_OPENBROWSER_ID = 0x2;
 
         private readonly string _exeDir;
         private readonly string _userdataFolder;
@@ -257,6 +258,11 @@ namespace mdview
                 e.Handled = true;
                 label1_MouseClick(null, null);
             }
+            else if (e.KeyCode == Keys.B)
+            {
+                e.Handled = true;
+                ReopenInBrowser();
+            }
         }
 
         private void webView21_KeyDown(object sender, KeyEventArgs e)
@@ -294,15 +300,32 @@ namespace mdview
             IntPtr hSysMenu = GetSystemMenu(this.Handle, false);
             AppendMenu(hSysMenu, MF_SEPARATOR, 0, string.Empty);
             AppendMenu(hSysMenu, MF_STRING, SYSMENU_OPEN_ID, "&Open file (Ctrl+O)...");
+            AppendMenu(hSysMenu, MF_STRING, SYSMENU_OPENBROWSER_ID, "Reopen in &browser (Ctrl+B)");
         }
 
         protected override void WndProc(ref Message m)
         {
             base.WndProc(ref m);
 
-            if ((m.Msg == WM_SYSCOMMAND) && ((int)m.WParam == SYSMENU_OPEN_ID))
+            if (m.Msg == WM_SYSCOMMAND)
             {
-                label1_MouseClick(null, null);
+                switch ((int)m.WParam)
+                {
+                    case SYSMENU_OPEN_ID:
+                        label1_MouseClick(null, null);
+                        break;
+                    case SYSMENU_OPENBROWSER_ID:
+                        ReopenInBrowser();
+                        break;
+                }
+            }
+        }
+
+        private void ReopenInBrowser()
+        {
+            if (!string.IsNullOrEmpty(_resultFile) && File.Exists(_resultFile))
+            {
+                new Shell32.Shell().Open(_resultFile);
             }
         }
     }
